@@ -12,6 +12,10 @@ body {
   line-height: 1.5;
 }
 
+.list {
+  list-style: none;
+}
+
 #search-box {
   font: inherit;
   padding: 8px;
@@ -20,29 +24,24 @@ body {
 }
 
 .country-list {
-  list-style: none;
-  padding-left: 0;
   margin: 0;
+  padding: 0;
 }
 
-.country-list li {
+.country-list__item {
   display: flex;
   align-items: center;
-  margin-bottom: 10px;
 }
 
-.country-list li:only-child {
-  font-size: 18px;
-  font-weight: bold;
-}
-
-.country-list img {
-  max-width: 30px;
+.country-list__img {
   margin-right: 10px;
 }
 
-.country-info ul {
-  list-style: none;
-  padding-left: 0;
-  margin: 0;
+.country-list__container {
+  display: flex;
+  align-items: center;
+}
+
+.country-list__container > img {
+  margin-right: 10px;
 }
