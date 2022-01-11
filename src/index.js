@@ -1,45 +1,72 @@
 import './css/styles.css';
-import debounce from 'lodash.debounce';
-import Notiflix from 'notiflix';
-import fetch from './api/fetchCountries';
+import { fetchCountries } from './fetchCountries';
+import { Notify } from 'notiflix/build/notiflix-notify-aio';
 
+var debounce = require('lodash.debounce');
 const DEBOUNCE_DELAY = 300;
-
 const refs = {
-  inputRef: document.querySelector('#search-box'),
-  countryList: document.querySelector('.country-list'),
-  countryInfo: document.querySelector('.country-info'),
+  input: document.querySelector('#search-box'),
+  list: document.querySelector('.country-list'),
+  container: document.querySelector('.country-info'),
 };
 
-refs.inputRef.addEventListener('input', debounce(onInput, DEBOUNCE_DELAY));
+refs.input.addEventListener(
+  'input',
+  debounce(event => {
+    const valueOfInput = event.target.value.trim();
 
-function onInput() {
-  refs.countryList.innerHTML = '';
-  refs.countryInfo.innerHTML = '';
-  fetch(refs.inputRef.value).then(data => {
-    if (data.length > 10) {
-      Notiflix.Notify.info('Too many matches found. Please enter a more specific name.');
-    } else if (data.length >= 2 && data.length <= 10) {
-      renderSeveralCountriesMarkup(data);
-    } else if (data.length === 1) {
-      renderOneCountryMarkup(data[0]);
+    if (valueOfInput === '') {
+      refs.list.innerHTML = '';
+      refs.container.innerHTML = '';
+      return;
     }
-  });
-}
 
-function renderSeveralCountriesMarkup(data) {
-  const markup = data
-    .map(({ flags, name }) => `<li><img src="${flags.svg}"/> ${name.official}</li>`)
+    fetchCountries(valueOfInput)
+      .then(countries => {
+        if (countries.length > 10) {
+          Notify.info('Too many matches found. Please enter a more specific name.');
+          return;
+        } else if (countries.length >= 2 && countries.length <= 10) {
+          refs.container.innerHTML = '';
+          renderFewCountryList(countries);
+          return;
+        } else {
+          refs.list.innerHTML = '';
+          renderOneCountryList(countries);
+        }
+      })
+      .catch(() => Notify.failure('Oops, there is no country with that name'));
+  }, DEBOUNCE_DELAY),
+);
+
+function renderFewCountryList(countries) {
+  const markup = countries
+    .map(country => {
+      return `<li class="country-list__item list">
+          <img class='country-list__img' src="${country.flags.svg}" alt="flag of Country" width="30px">
+          <p>${country.name.common}</p>
+        </li>`;
+    })
     .join('');
-  refs.countryList.innerHTML = markup;
+  refs.list.innerHTML = markup;
 }
 
-function renderOneCountryMarkup({ flags, name, capital, population, languages }) {
-  refs.countryList.innerHTML = `<li><img src="${flags.svg}"/> ${name.official}</li>`;
-  refs.countryInfo.innerHTML = `
-    <ul>
-        <li><strong>Capital:</strong> ${capital}</li>
-        <li><strong>Population:</strong> ${population}</li>
-        <li><strong>Languages:</strong> ${Object.values(languages).join(', ')}</li>
-    </ul>`;
+function renderOneCountryList(countries) {
+  const markup = countries
+    .map(country => {
+      const countryValues = Object.values(country);
+      const languagesValues = Object.values(countryValues[3]);
+
+      return `
+          <div class="country-list__container">
+          <img src="${country.flags.svg}" alt="flag of Country" width="30px">
+          <p>${country.name.official}</p>
+          </div>
+          <p><b>Capital</b>: ${country.capital}</p>
+          <p><b>Population</b>: ${country.population}</p>
+          <p><b>Languages</b>: ${languagesValues}</p>
+        </li>`;
+    })
+    .join('');
+  refs.container.innerHTML = markup;
 }
