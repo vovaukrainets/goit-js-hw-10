@@ -10,10 +10,7 @@ body {
   background-color: #fafafa;
   color: #212121;
   line-height: 1.5;
-}
-
-.list {
-  list-style: none;
+  padding: 20px;
 }
 
 #search-box {
@@ -26,22 +23,20 @@ body {
 .country-list {
   margin: 0;
   padding: 0;
+  list-style: none;
+  font-size: 18px;
 }
 
-.country-list__item {
+.country-info ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.country-info li {
+  font-size: 18px;
+  width: 100%;
   display: flex;
-  align-items: center;
-}
-
-.country-list__img {
-  margin-right: 15px;
-}
-
-.country-list__container {
-  display: flex;
-  align-items: center;
-}
-
-.country-list__container > img {
-  margin-right: 15px;
+  flex-flow: row wrap;
+  flex-basis: calc(100% - 200px);
 }
