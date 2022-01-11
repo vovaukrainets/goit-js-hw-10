@@ -1,70 +1,45 @@
-import '../css/styles.css';
-import { fetchCountries } from './fetchCountries';
+import './css/styles.css';
 import debounce from 'lodash.debounce';
-import { Notify } from 'notiflix/build/notiflix-notify-aio';
+import Notiflix from 'notiflix';
+import fetch from './api/fetchCountries';
 
 const DEBOUNCE_DELAY = 300;
-const input = document.querySelector('input#search-box');
-const countryList = document.querySelector('.country-list');
-const counrtyInfo = document.querySelector('.country-info');
 
-input.addEventListener('input', debounce(showCountry, DEBOUNCE_DELAY));
+const refs = {
+  inputRef: document.querySelector('#search-box'),
+  countryList: document.querySelector('.country-list'),
+  countryInfo: document.querySelector('.country-info'),
+};
 
-function showCountry() {
-  countryList.innerHTML = '';
-  counrtyInfo.innerHTML = '';
-  const value = input.value.trim();
-  if (!value) {
-    return;
-  }
-  fetchCountries(value)
-    .then(response => {
-      if (!response.ok) {
-        throw Notify.failure('Oops, there is no country with that name');
-      }
-      return response.json();
-    })
-    .then(countries => {
-      if (countries.length > 10) {
-        Notify.info('Too many matches found. Please enter a more specific name.');
-        return;
-      }
-      if (countries.length === 1) {
-        return countryCard(countries);
-      } else {
-        return countriesCard(countries);
-      }
-    })
-    .catch(console.log);
+refs.inputRef.addEventListener('input', debounce(onInput, DEBOUNCE_DELAY));
+
+function onInput() {
+  refs.countryList.innerHTML = '';
+  refs.countryInfo.innerHTML = '';
+  fetch(refs.inputRef.value).then(data => {
+    if (data.length > 10) {
+      Notiflix.Notify.info('Too many matches found. Please enter a more specific name.');
+    } else if (data.length >= 2 && data.length <= 10) {
+      renderSeveralCountriesMarkup(data);
+    } else if (data.length === 1) {
+      renderOneCountryMarkup(data[0]);
+    }
+  });
 }
 
-function countryCard(country) {
-  const { flags, name, capital, languages, population } = country[0];
-
-  return (counrtyInfo.innerHTML = `<h1 class="country-name"><img class="img-country" src="${
-    flags.svg
-  }" alt="${name.common}">${name.common}</h1>
-            <ul class="country-inf">
-                <li class="value-heading">Capital:
-                    <span class="value">${capital}</span>
-                </li>
-                <li class="value-heading">Population:
-                    <span class="value">${population}</span>
-                </li>
-                <li class="value-heading">Languages:
-                    <span class="value">${Object.values(languages).join(', ')}</span>
-                </li>
-            </ul>`);
-}
-
-function countriesCard(countries) {
-  countryList.innerHTML = countries
-    .map(
-      ({ name, flags }) =>
-        `<li class="country__list-item">
-        <img class="img-countries" src="${flags.svg}" alt="${name.common}>
-        <span class="country__list-name">${name.common}<span>
-    </li>`,
-    )
+function renderSeveralCountriesMarkup(data) {
+  const markup = data
+    .map(({ flags, name }) => `<li><img src="${flags.svg}"/> ${name.official}</li>`)
     .join('');
+  refs.countryList.innerHTML = markup;
+}
+
+function renderOneCountryMarkup({ flags, name, capital, population, languages }) {
+  refs.countryList.innerHTML = `<li><img src="${flags.svg}"/> ${name.official}</li>`;
+  refs.countryInfo.innerHTML = `
+    <ul>
+        <li><strong>Capital:</strong> ${capital}</li>
+        <li><strong>Population:</strong> ${population}</li>
+        <li><strong>Languages:</strong> ${Object.values(languages).join(', ')}</li>
+    </ul>`;
 }
