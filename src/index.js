@@ -1,69 +1,70 @@
+import '../css/styles.css';
+import { fetchCountries } from './fetchCountries';
 import debounce from 'lodash.debounce';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
-import { fetchCountries } from './fetchCountries';
-import '../css/styles.css';
 
 const DEBOUNCE_DELAY = 300;
+const input = document.querySelector('input#search-box');
+const countryList = document.querySelector('.country-list');
+const counrtyInfo = document.querySelector('.country-info');
 
-const cardContainer = document.querySelector('.country-info');
-const listContainer = document.querySelector('.country-list');
-const inputEl = document.querySelector('input#search-box');
+input.addEventListener('input', debounce(showCountry, DEBOUNCE_DELAY));
 
-inputEl.addEventListener('input', debounce(onInput, DEBOUNCE_DELAY));
-
-function onInput() {
-  const searchQuery = inputEl.value.trim();
-  fetchCountries(searchQuery)
-    .then(data => {
-      clearContainers();
-
-      if (data.length === 1) {
-        resetInput();
-        renderCountryCard(data);
-        return;
-      } else if (data.length > 1 && data.length <= 10) {
-        renderCountriesList(data);
+function showCountry() {
+  countryList.innerHTML = '';
+  counrtyInfo.innerHTML = '';
+  const value = input.value.trim();
+  if (!value) {
+    return;
+  }
+  fetchCountries(value)
+    .then(response => {
+      if (!response.ok) {
+        throw Notify.failure('Oops, there is no country with that name');
+      }
+      return response.json();
+    })
+    .then(countries => {
+      if (countries.length > 10) {
+        Notify.info('Too many matches found. Please enter a more specific name.');
         return;
       }
-      Notify.info('Too many matches found. Please enter a more specific name.');
+      if (countries.length === 1) {
+        return countryCard(countries);
+      } else {
+        return countriesCard(countries);
+      }
     })
-    .catch(onFetchError);
+    .catch(console.log);
 }
 
-function renderCountryCard([{ flags, name, capital, population, languages }]) {
-  cardContainer.innerHTML = `<div class="country-symbolics">
-  <img class="country-flag"src="${flags.svg}" alt="country flag" width="50" />
-  <h1 class="country-name">${name.official}</h1>
-  </div>
-        <ul class="country-summary-list">
-          <li class="country-summary-item"><b>Capital:</b> ${capital}</li>
-          <li class="country-summary-item"><b>Population:</b> ${population}</li>
-          <li class="country-summary-item"><b>Languages:</b> ${Object.values(languages).join(
-            ', ',
-          )}</li>
-        </ul>`;
+function countryCard(country) {
+  const { flags, name, capital, languages, population } = country[0];
+
+  return (counrtyInfo.innerHTML = `<h1 class="country-name"><img class="img-country" src="${
+    flags.svg
+  }" alt="${name.common}">${name.common}</h1>
+            <ul class="country-inf">
+                <li class="value-heading">Capital:
+                    <span class="value">${capital}</span>
+                </li>
+                <li class="value-heading">Population:
+                    <span class="value">${population}</span>
+                </li>
+                <li class="value-heading">Languages:
+                    <span class="value">${Object.values(languages).join(', ')}</span>
+                </li>
+            </ul>`);
 }
 
-function renderCountriesList(countries) {
-  countries.forEach(({ flags, name }) => {
-    const markup = `<li class="country">
-      <img class="country-flag"src="${flags.svg}" alt="country flag" width="40" />
-  <p class="country-name">${name.common}</p>
-  </li>`;
-    listContainer.insertAdjacentHTML('beforeend', markup);
-  });
-}
-
-function onFetchError(error) {
-  Notify.failure(`Oops, there is no country with that name`);
-  resetInput();
-}
-
-function resetInput() {
-  inputEl.value = null;
-}
-
-function clearContainers() {
-  cardContainer.innerHTML = '';
-  listContainer.innerHTML = '';
+function countriesCard(countries) {
+  countryList.innerHTML = countries
+    .map(
+      ({ name, flags }) =>
+        `<li class="country__list-item">
+        <img class="img-countries" src="${flags.svg}" alt="${name.common}>
+        <span class="country__list-name">${name.common}<span>
+    </li>`,
+    )
+    .join('');
 }
